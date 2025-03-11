@@ -1,0 +1,49 @@
+/** [SECTION] KEYBINDS
+ * add custom keybinds in /usr/lib/librewolf/librewolf.cfg
+ * https://superuser.com/questions/1271147/change-key-bindings-keyboard-shortcuts-in-firefox-57
+ * https://firefox-source-docs.mozilla.org/devtools-user/browser_toolbox/index.html
+ */
+pref("general.config.obscure_value", 0);
+pref("general.config.sandbox_enabled", false);
+
+try {
+  let { classes: Cc, interfaces: Ci, manager: Cm } = Components;
+  const Services = globalThis.Services;
+  const { SessionStore } = Components.utils.import('resource:///modules/sessionstore/SessionStore.jsm');
+
+  function ConfigJS() {
+    Services.obs.addObserver(this, 'chrome-document-global-created');
+  }
+
+  ConfigJS.prototype = {
+    observe: function (aSubject) {
+      aSubject.addEventListener('DOMContentLoaded', this);
+    },
+    handleEvent: function (aEvent) {
+      let document = aEvent.originalTarget;
+      let window = document.defaultView;
+      let location = window.location.href;
+      if (/^(chrome:(?!\/\/(global\/content\/commonDialog|browser\/content\/webext-panels)))/.test(location)) {
+        if (window._gBrowser) {
+	  // bind ctrl k to find in page instead of focus searchbar
+	  // ctrl f does not work in firefox for some reason
+          let search = window.document.getElementById('key_search');
+          if (search) {
+            search.remove();
+          }
+          let find = window.document.getElementById('key_find');
+          if (find) {
+            find.setAttribute("modifiers", "accel");
+            find.setAttribute("key", "K");
+          }
+        }
+      }
+    }
+  };
+
+  if (!Services.appinfo.inSafeMode) {
+    new ConfigJS();
+  }
+} catch (ex) {
+  console.error(ex);
+}
